@@ -1,0 +1,206 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNXTke0TXhWhCAEua8jUtb5",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Mennamedhattt/GUI-of-scientific-calculator/blob/main/dashboard%20corona\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "bPOHQu8I3OSI"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from dash import html, dcc, Dash, callback, Input, Output\n",
+        "import plotly.express as px\n",
+        "import pandas as pd\n",
+        "\n",
+        "############################ DATASET ###############################\n",
+        "def load_dataset():\n",
+        "    # Load dataset from CSV\n",
+        "    corona_df = pd.read_csv(\"covid_19_clean_complete.csv\")\n",
+        "\n",
+        "    # Perform any necessary data cleaning or transformations here\n",
+        "    # For instance, you may want to group by country and aggregate on specific columns\n",
+        "    corona_df[\"Date\"] = pd.to_datetime(corona_df[\"Date\"])\n",
+        "\n",
+        "    # Example transformations: Grouping data to focus on the latest date\n",
+        "    latest_data = corona_df[corona_df[\"Date\"] == corona_df[\"Date\"].max()]\n",
+        "\n",
+        "    return corona_df, latest_data\n",
+        "\n",
+        "corona_df, latest_data = load_dataset()\n",
+        "\n",
+        "######################## CHARTS ##################################\n",
+        "def create_histogram(col_name):\n",
+        "    fig = px.histogram(latest_data, x=col_name, nbins=50)\n",
+        "    fig.update_traces(marker={\"line\": {\"width\": 2, \"color\": \"black\"}})\n",
+        "    fig.update_layout(paper_bgcolor=\"#e5ecf6\", margin={\"t\": 0})\n",
+        "    return fig\n",
+        "\n",
+        "def create_scatter_chart(x_axis, y_axis):\n",
+        "    fig = px.scatter(latest_data, x=x_axis, y=y_axis, color='Country/Region')\n",
+        "    fig.update_traces(marker={\"size\": 12, \"line\": {\"width\": 2, \"color\": \"black\"}})\n",
+        "    fig.update_layout(paper_bgcolor=\"#e5ecf6\", margin={\"t\": 0})\n",
+        "    return fig\n",
+        "def create_pie_chart():\n",
+        "    # Exclude the 'Date' column from the sum operation\n",
+        "    country_counts = latest_data.drop(columns=['Date']).groupby(\"Country/Region\").sum().reset_index()\n",
+        "    fig = px.pie(country_counts, values='Confirmed', names='Country/Region', hole=0.5)\n",
+        "    fig.update_traces(marker={\"line\": {\"width\": 2, \"color\": \"black\"}})\n",
+        "    fig.update_layout(paper_bgcolor=\"#e5ecf6\", margin={\"t\": 0})\n",
+        "    return fig\n",
+        "\n",
+        "def create_bar_chart(col_name):\n",
+        "    fig = px.bar(latest_data, x=\"Country/Region\", y=col_name, color=\"Country/Region\")\n",
+        "    fig.update_traces(marker={\"line\": {\"width\": 2, \"color\": \"black\"}})\n",
+        "    fig.update_layout(paper_bgcolor=\"#e5ecf6\", margin={\"t\": 0})\n",
+        "    return fig\n",
+        "\n",
+        "####################### WIDGETS ##########################\n",
+        "hist_drop = dcc.Dropdown(id=\"hist_column\",\n",
+        "                         options=[{\"label\": col, \"value\": col} for col in latest_data.columns],\n",
+        "                         value=\"Confirmed\", clearable=False, className=\"text-dark p-2\")\n",
+        "\n",
+        "x_axis = dcc.Dropdown(id=\"x_axis\",\n",
+        "                      options=[{\"label\": col, \"value\": col} for col in latest_data.columns],\n",
+        "                      value=\"Confirmed\", clearable=False, className=\"text-dark p-2\")\n",
+        "\n",
+        "y_axis = dcc.Dropdown(id=\"y_axis\",\n",
+        "                      options=[{\"label\": col, \"value\": col} for col in latest_data.columns],\n",
+        "                      value=\"Deaths\", clearable=False, className=\"text-dark p-2\")\n",
+        "\n",
+        "avg_drop = dcc.Dropdown(id=\"avg_drop\",\n",
+        "                        options=[{\"label\": col, \"value\": col} for col in latest_data.columns],\n",
+        "                        value=\"Recovered\", clearable=False, className=\"text-dark p-2\")\n",
+        "\n",
+        "####################### LAYOUT #############################\n",
+        "external_css = [\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css\"]\n",
+        "app = Dash(__name__, external_stylesheets=external_css)\n",
+        "\n",
+        "sidebar = html.Div([\n",
+        "    html.Br(),\n",
+        "    html.H3(\"Sidebar\", className=\"text-center fw-bold fs-2\"),\n",
+        "    html.Br(),\n",
+        "    html.H3(\"Histogram Dropdown\", className=\"fs-4\"),\n",
+        "    hist_drop,\n",
+        "    html.Br(),\n",
+        "    html.H3(\"Scatter Chart Dropdowns\", className=\"fs-4\"),\n",
+        "    x_axis, y_axis,\n",
+        "    html.Br(),\n",
+        "    html.H3(\"Bar Chart Dropdown\", className=\"fs-4\"),\n",
+        "    avg_drop\n",
+        "    ], className=\"col-2 bg-dark text-white\", style={\"height\": \"100vh\"}\n",
+        ")\n",
+        "\n",
+        "main_content = html.Div([\n",
+        "    html.Br(),\n",
+        "    html.H2(\"COVID-19 Dataset Analysis\", className=\"text-center fw-bold fs-1\"),\n",
+        "    html.Div([\n",
+        "        dcc.Graph(id=\"histogram\", className=\"col-5\"),\n",
+        "        dcc.Graph(id=\"scatter_chart\", className=\"col-5\")\n",
+        "        ], className=\"row\"),\n",
+        "    html.Div([\n",
+        "        dcc.Graph(id=\"bar_chart\", className=\"col-5\"),\n",
+        "        dcc.Graph(id=\"pie_chart\", figure=create_pie_chart(), className=\"col-5\"),\n",
+        "        ], className=\"row\"),\n",
+        "    ], className=\"col\", style={\"height\": \"100vh\", \"background-color\": \"#e5ecf6\"}\n",
+        ")\n",
+        "\n",
+        "app.layout = html.Div([html.Div([sidebar, main_content], className=\"row\")], className=\"container-fluid\", style={\"height\": \"100vh\"})\n",
+        "\n",
+        "######################## CALLBACKS #######################################\n",
+        "@callback(Output(\"histogram\", \"figure\"), [Input(\"hist_column\", \"value\")])\n",
+        "def update_histogram(hist_column):\n",
+        "    return create_histogram(hist_column)\n",
+        "\n",
+        "@callback(Output(\"scatter_chart\", \"figure\"), [Input(\"x_axis\", \"value\"), Input(\"y_axis\", \"value\")])\n",
+        "def update_scatter(x_axis, y_axis):\n",
+        "    return create_scatter_chart(x_axis, y_axis)\n",
+        "\n",
+        "@callback(Output(\"bar_chart\", \"figure\"), [Input(\"avg_drop\", \"value\")])\n",
+        "def update_bar(avg_drop):\n",
+        "    return create_bar_chart(avg_drop)\n",
+        "\n",
+        " ################################# RUN APP ##############################\n",
+        "if __name__ == \"__main__\":\n",
+        "    app.run(debug=True)\n"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 671
+        },
+        "id": "bNyoeMJJ8uVu",
+        "outputId": "5a38e6e3-1296-4c61-d0c4-68769c7dcb1c"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.Javascript object>"
+            ],
+            "application/javascript": [
+              "(async (port, path, width, height, cache, element) => {\n",
+              "    if (!google.colab.kernel.accessAllowed && !cache) {\n",
+              "      return;\n",
+              "    }\n",
+              "    element.appendChild(document.createTextNode(''));\n",
+              "    const url = await google.colab.kernel.proxyPort(port, {cache});\n",
+              "    const iframe = document.createElement('iframe');\n",
+              "    iframe.src = new URL(path, url).toString();\n",
+              "    iframe.height = height;\n",
+              "    iframe.width = width;\n",
+              "    iframe.style.border = 0;\n",
+              "    iframe.allow = [\n",
+              "        'accelerometer',\n",
+              "        'autoplay',\n",
+              "        'camera',\n",
+              "        'clipboard-read',\n",
+              "        'clipboard-write',\n",
+              "        'gyroscope',\n",
+              "        'magnetometer',\n",
+              "        'microphone',\n",
+              "        'serial',\n",
+              "        'usb',\n",
+              "        'xr-spatial-tracking',\n",
+              "    ].join('; ');\n",
+              "    element.appendChild(iframe);\n",
+              "  })(8050, \"/\", \"100%\", 650, false, window.element)"
+            ]
+          },
+          "metadata": {}
+        }
+      ]
+    }
+  ]
+}
